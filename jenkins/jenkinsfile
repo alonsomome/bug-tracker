@@ -5,13 +5,17 @@ pipeline {
         stage('Unit Test - Backend') {
             agent {
                 docker {
-                    image 'snakee/golang-junit:1.21'
+                    image 'golang:1.21-alpine'
                     reuseNode true
                 }
             }
             steps {
-                dir('bugtracker-backend'){
-                    sh 'go test -v ./...'
+                dir('bugtracker-backend') {
+                    sh '''
+                        apk add --no-cache git
+                        go install github.com/jstemmer/go-junit-report/v2@latest
+                        go test -v ./... 2>&1 | /go/bin/go-junit-report > report.xml
+                    '''
                 }
             }
         }
