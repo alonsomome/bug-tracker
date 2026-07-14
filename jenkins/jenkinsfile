@@ -2,7 +2,7 @@ pipeline {
     agent any
     stages {
         stage('Execute Unit Tests'){
-            parallel {
+            parallel failFast: true, {
                 stage('Unit Test - Backend') {
                     agent {
                         docker {
@@ -72,9 +72,6 @@ pipeline {
                         }
                     }
                 }
-            }
-            options {
-                failFast true
             }
         }
     }
