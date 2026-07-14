@@ -3,7 +3,6 @@ pipeline {
     stages {
         stage('Execute Unit Tests'){
             parallel {
-                failFast true
                 stage('Unit Test - Backend') {
                     agent {
                         docker {
@@ -73,6 +72,9 @@ pipeline {
                         }
                     }
                 }
+            }
+            options {
+                failFast true
             }
         }
     }
