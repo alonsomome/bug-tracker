@@ -34,10 +34,7 @@ pipeline {
                     junit 'bugtracker-backend/test-results.xml'
                     
                     // Publicar reporte interactivo de cobertura en HTML
-                    publishHTML(target: [
-                        allowMissing: false,
-                        alwaysLinkToLastBuild: true,
-                        keepAll: true,
+                    publishHTML(target: [                        
                         reportDir: 'bugtracker-backend/reports',
                         reportFiles: 'coverage.html',
                         reportName: 'Back End Coverage'
