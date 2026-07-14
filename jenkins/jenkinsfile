@@ -11,18 +11,41 @@ pipeline {
                 }
             }
             steps {
-                dir('bugtracker-backend'){
-                    // Ejecutamos las pruebas y convertimos la salida a XML compatible con JUnit
-                    sh 'go test -v ./... 2>&1 | go-junit-report > test-results.xml'
+                dir('bugtracker-backend') {
+                    sh '''
+                        # 1. Ejecutar pruebas para el reporte gráfico JUnit
+                        go test -v ./... 2>&1 | go-junit-report > test-results.xml
+                        
+                        # 2. Generar datos crudos de cobertura
+                        go test -coverprofile=coverage.out -covermode=atomic ./...
+                        
+                        # 3. Convertir los datos a formato HTML
+                        go tool cover -html=coverage.out -o coverage.html
+                        
+                        # 4. Crear carpeta 'reports' de manera segura y mover el HTML allí
+                        mkdir -p reports
+                        mv coverage.html reports/
+                    '''
                 }
             }
             post {
                 always {
-                    // Publicamos el reporte XML generado
+                    // Publicar reporte de JUnit (Gráfica de barras)
                     junit 'bugtracker-backend/test-results.xml'
+                    
+                    // Publicar reporte interactivo de cobertura en HTML
+                    publishHTML(target: [
+                        allowMissing: false,
+                        alwaysLinkToLastBuild: true,
+                        keepAll: true,
+                        reportDir: 'bugtracker-backend/reports',
+                        reportFiles: 'coverage.html',
+                        reportName: 'Back End Coverage'
+                    ])
                 }
             }
         }
+
         stage('Unit Test - Frontend') {
             agent {
                 docker {
