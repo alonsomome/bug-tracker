@@ -20,8 +20,9 @@ pipeline {
                 always {
                     // Publicamos el reporte XML generado
                     junit 'bugtracker-backend/test-results.xml'
+                }
+            }
         }
-
         stage('Unit Test - Frontend') {
             agent {
                 docker {
