@@ -1,80 +1,84 @@
 pipeline {
     agent any
-
     stages {
-        stage('Unit Test - Backend') {
-            agent {
-                docker {
-                    image 'snakee/golang-junit:1.21'
-                    reuseNode true
-                    args '-u 0:0'
+        stage('Execute Unit Tests'){
+            parallel {
+                failFast true
+                stage('Unit Test - Backend') {
+                    agent {
+                        docker {
+                            image 'snakee/golang-junit:1.21'
+                            reuseNode true
+                            args '-u 0:0'
+                        }
+                    }
+                    steps {
+                        dir('bugtracker-backend') {
+                            sh '''
+                                # 1. Ejecutar pruebas para el reporte gráfico JUnit
+                                go test -v ./... 2>&1 | go-junit-report > test-results.xml
+                                
+                                # 2. Generar datos crudos de cobertura
+                                go test -coverprofile=coverage.out -covermode=atomic ./...
+                                
+                                # 3. Convertir los datos a formato HTML
+                                go tool cover -html=coverage.out -o coverage.html
+                                
+                                # 4. Crear carpeta 'reports' de manera segura y mover el HTML allí
+                                mkdir -p reports
+                                mv coverage.html reports/
+                            '''
+                        }
+                    }
+                    post {
+                        always {
+                            // Publicar reporte de JUnit (Gráfica de barras)
+                            junit 'bugtracker-backend/test-results.xml'
+                            
+                            // Publicar reporte interactivo de cobertura en HTML
+                            publishHTML(target: [                        
+                                reportDir: 'bugtracker-backend/reports',
+                                reportFiles: 'coverage.html',
+                                reportName: 'Back End Coverage'
+                            ])
+                        }
+                    }
                 }
-            }
-            steps {
-                dir('bugtracker-backend') {
-                    sh '''
-                        # 1. Ejecutar pruebas para el reporte gráfico JUnit
-                        go test -v ./... 2>&1 | go-junit-report > test-results.xml
-                        
-                        # 2. Generar datos crudos de cobertura
-                        go test -coverprofile=coverage.out -covermode=atomic ./...
-                        
-                        # 3. Convertir los datos a formato HTML
-                        go tool cover -html=coverage.out -o coverage.html
-                        
-                        # 4. Crear carpeta 'reports' de manera segura y mover el HTML allí
-                        mkdir -p reports
-                        mv coverage.html reports/
-                    '''
-                }
-            }
-            post {
-                always {
-                    // Publicar reporte de JUnit (Gráfica de barras)
-                    junit 'bugtracker-backend/test-results.xml'
-                    
-                    // Publicar reporte interactivo de cobertura en HTML
-                    publishHTML(target: [                        
-                        reportDir: 'bugtracker-backend/reports',
-                        reportFiles: 'coverage.html',
-                        reportName: 'Back End Coverage'
-                    ])
+                stage('Unit Test - Frontend') {
+                    agent {
+                        docker {
+                            image 'node:20-alpine'
+                            reuseNode true
+                            args '-u 0:0'
+                        }
+                    }
+                    steps {
+                        dir('bugtracker-frontend'){
+                            sh '''
+                                npm ci
+                                npm test
+                                mkdir -p reports
+                                mv coverage reports/
+                            '''
+                        }
+                    }
+                    post {
+                        always {
+                            junit 'bugtracker-frontend/test-results.xml'
+                            publishHTML target: [                        
+                                reportDir: 'bugtracker-frontend/reports/coverage',
+                                reportFiles: 'index.html',
+                                reportName: 'Front End Coverage'
+                            ]
+                        }
+                    }
                 }
             }
         }
-
-        stage('Unit Test - Frontend') {
-            agent {
-                docker {
-                    image 'node:20-alpine'
-                    reuseNode true
-                    args '-u 0:0'
-                }
-            }
-            steps {
-                dir('bugtracker-frontend'){
-                    sh '''
-                        npm ci
-                        npm test
-
-                        #Limpiamos por completo cualquier 'reports' anterior
-                        rm -rf reports
-
-                        mkdir -p reports
-                        mv coverage reports/
-                    '''
-                }
-            }
-            post {
-                always {
-                    junit 'bugtracker-frontend/test-results.xml'
-                    publishHTML target: [                        
-                        reportDir: 'bugtracker-frontend/reports/coverage',
-                        reportFiles: 'index.html',
-                        reportName: 'Front End Coverage'
-                    ]
-                }
-            }
+    }
+    post {
+        always {
+            cleanWs()
         }
     }
 }
