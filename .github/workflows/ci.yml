@@ -1,0 +1,35 @@
+name: CI
+
+# Define cuándo se ejecutará este flujo de trabajo
+on:
+  # Se ejecuta automáticamente cada vez que se sube código a la rama principal (main)
+  push:
+    branches:
+      - main
+  
+  # Permite disparar el flujo de trabajo manualmente desde la interfaz web de GitHub
+  workflow_dispatch:
+
+jobs:
+  # Nombre del trabajo para ejecutar las pruebas unitarias del Backend
+  unit-tests-backend:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Paso 1: Clonar/Descargar el código del repositorio en el contenedor virtual
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # Paso 2: Instalar y configurar Go con sistema de caché para optimizar velocidad
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.21'
+          # Ruta al archivo de dependencias para acelerar futuras ejecuciones usando la caché
+          cache-dependency-path: bugtracker-backend/go.sum
+
+      # Paso 3: Ejecutar las pruebas unitarias de la aplicación en Go
+      - name: Execute backend unit tests
+        working-directory: bugtracker-backend
+        run: |
+          go test -v ./...
