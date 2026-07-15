@@ -18,11 +18,11 @@ jobs:
     steps:
       # Paso 1: Clonar/Descargar el código del repositorio en el contenedor virtual
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v4.2.2
 
       # Paso 2: Instalar y configurar Go con sistema de caché para optimizar velocidad
       - name: Set up Go
-        uses: actions/setup-go@v4
+        uses: actions/setup-go@v5
         with:
           go-version: '1.21'
           # Ruta al archivo de dependencias para acelerar futuras ejecuciones usando la caché
@@ -42,7 +42,7 @@ jobs:
     steps:
       # Paso 1: Clonar el código en este nuevo contenedor
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v4.2.2
 
       # Paso 2: Instalar Node.js v20 y configurar la caché para npm
       - name: Set up Node.js
@@ -59,3 +59,13 @@ jobs:
         run: |
          npm ci
          npm test
+
+      # Paso 4: Publicar los resultados de las pruebas del Frontend
+      - name: Publish Frontend Test Results
+        uses: dorny/test-reporter@v1
+        # if: always() asegura que este paso se ejecute incluso si el paso "npm test" falla.
+        if: always()
+        with:
+          name: Frontend Unit Tests Report
+          path: bugtracker-frontend/test-results.xml
+          reporter: jest-junit  
