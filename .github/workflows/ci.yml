@@ -28,11 +28,25 @@ jobs:
           # Ruta al archivo de dependencias para acelerar futuras ejecuciones usando la caché
           cache-dependency-path: bugtracker-backend/go.sum
 
-      # Paso 3: Ejecutar las pruebas unitarias de la aplicación en Go
+      # Paso 3: Instalar la utilidad para convertir los tests de Go a formato JUnit (XML)
+      - name: Install go-junit-report
+        run: go install github.com/jstemmer/go-junit-report/v2@latest
+
+      # Paso 4: Ejecutar las pruebas unitarias y redirigir la salida hacia el archivo XML
       - name: Execute Backend Unit Tests
         working-directory: ./bugtracker-backend
         run: |
-          go test -v ./...
+          go test -v ./... 2>&1 | go-junit-report > test-results.xml          
+
+      # Paso 5: Publicar los resultados de las pruebas del Backend
+      - name: Publish Backend Test Results
+        uses: dorny/test-reporter@v1
+        if: always()
+        with:
+          name: Backend Unit Tests Report
+          path: bugtracker-backend/test-results.xml
+          reporter: jest-junit
+
 
 # --- TRABAJO 2: PRUEBAS DEL FRONTEND ---
   unit-tests-frontend:
