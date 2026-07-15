@@ -11,7 +11,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  # Nombre del trabajo para ejecutar las pruebas unitarias del Backend
+  # --- TRABAJO 1: PRUEBAS DEL BACKEND ---
   unit-tests-backend:
     runs-on: ubuntu-latest
 
@@ -34,19 +34,26 @@ jobs:
         run: |
           go test -v ./...
 
+# --- TRABAJO 2: PRUEBAS DEL FRONTEND ---
   unit-tests-frontend:
+    # Esta línea fuerza a que este trabajo espere a que el backend termine con éxito
     needs:   unit-tests-backend
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      # Paso 1: Clonar el código en este nuevo contenedor
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
+      # Paso 2: Instalar Node.js v20 y configurar la caché para npm
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with: 
-          node-version: "20"
+          node-version: "lts/*"
           cache: "npm"
+          # Ruta al archivo de bloqueo para verificar cambios y optimizar la caché
           cache-dependency-path: bugtracker-frontend/package-lock.json
 
+      # Paso 3: Instalar dependencias limpias y ejecutar los tests unitarios
       - name: Execute Frontend Unit Tests
         working-directory: ./bugtracker-frontend
         run: |
