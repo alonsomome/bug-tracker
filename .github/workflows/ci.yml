@@ -90,7 +90,7 @@ jobs:
         run: |
           echo "## Frontend Test Coverage Report" >> $GITHUB_STEP_SUMMARY
           echo '```' >> $GITHUB_STEP_SUMMARY
-          cat full-output.txt >> $GITHUB_STEP_SUMMARY
+          cat full_output.txt >> $GITHUB_STEP_SUMMARY
           echo '```' >> $GITHUB_STEP_SUMMARY
 
       # Paso 5: Publicar los resultados de las pruebas del Frontend
