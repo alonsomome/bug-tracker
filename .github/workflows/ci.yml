@@ -76,14 +76,24 @@ jobs:
           # Ruta al archivo de bloqueo para verificar cambios y optimizar la caché
           cache-dependency-path: bugtracker-frontend/package-lock.json
 
-      # Paso 3: Instalar dependencias limpias y ejecutar los tests unitarios
+      # Paso 3: Instalar dependencias limpias, ejecutar pruebas y capturar la salida de consola
       - name: Execute Frontend Unit Tests
         working-directory: ./bugtracker-frontend
         run: |
          npm ci
-         npm test
+         npm test | tee full_output.txt
 
-      # Paso 4: Publicar los resultados de las pruebas del Frontend
+      # Paso 4: Escribir el reporte de cobertura del Frontend en el panel de resumen
+      - name: Write Frontend Coverage to Job Summary
+        working-directory: ./bugtracker-frontend
+        if: always()
+        run: |
+          echo "## Frontend Test Coverage Report" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          cat full-output.txt >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+
+      # Paso 5: Publicar los resultados de las pruebas del Frontend
       - name: Publish Frontend Test Results
         uses: dorny/test-reporter@v1
         # if: always() asegura que este paso se ejecute incluso si el paso "npm test" falla.
