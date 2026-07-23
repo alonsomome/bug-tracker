@@ -6,7 +6,12 @@ on:
   push:
     branches:
       - main
-  
+
+  # Se ejecuta cuando se abre o actualiza una Pull Request hacia la rama main
+  pull_request:
+    branches:
+      - main
+
   # Permite disparar el flujo de trabajo manualmente desde la interfaz web de GitHub
   workflow_dispatch:
 
@@ -135,4 +140,4 @@ jobs:
             ## Backend Test Coverage Report
             ```
             ${{ needs.unit-tests-backend.outputs.coverage }}
-            ```
+            ``` 
