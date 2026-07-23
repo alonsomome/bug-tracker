@@ -15,6 +15,10 @@ jobs:
   unit-tests-backend:
     runs-on: ubuntu-latest
 
+    # Declaramos qué salidas (outputs) expondrá este trabajo para que otros jobs las usen
+    outputs:
+      coverage: ${{ steps.test-backend.outputs.report }}
+
     steps:
       # Paso 1: Clonar/Descargar el código del repositorio en el contenedor virtual
       - name: Checkout repository
@@ -34,6 +38,7 @@ jobs:
 
       # Paso 4: Ejecutar las pruebas unitarias y redirigir la salida hacia el archivo XML
       - name: Execute Backend Unit Tests
+        id: test-backend # ID asignado para poder hacer referencia a sus outputs
         working-directory: ./bugtracker-backend
         run: |
 
@@ -45,6 +50,12 @@ jobs:
           cat coverage.text >> $GITHUB_STEP_SUMMARY
           echo '```' >> $GITHUB_STEP_SUMMARY
 
+          # Guardamos el contenido de coverage.text en la variable 'report' del flujo
+          echo "report<<EOF" >> $GITHUB_OUTPUT
+          cat coverage.text >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+          
           go test -v ./... 2>&1 | go-junit-report > test-results.xml          
 
       # Paso 5: Publicar los resultados de las pruebas del Backend
@@ -60,7 +71,8 @@ jobs:
 # --- TRABAJO 2: PRUEBAS DEL FRONTEND ---
   unit-tests-frontend:
     # Esta línea fuerza a que este trabajo espere a que el backend termine con éxito
-    needs:   unit-tests-backend
+    #needs:   unit-tests-backend (comentado)
+
     runs-on: ubuntu-latest
     steps:
       # Paso 1: Clonar el código en este nuevo contenedor
@@ -102,3 +114,25 @@ jobs:
           name: Frontend Unit Tests Report
           path: bugtracker-frontend/test-results.xml
           reporter: jest-junit  
+
+# --- TRABAJO 3: CREAR COMENTARIO DE COBERTURA EN LA PULL REQUEST ---
+  create-coverage-comments:
+    # Solo se ejecuta si el evento actual proviene de una Pull Request
+    if: github.event_name == 'pull_request'
+    needs: [unit-tests-backend] # Requiere que el trabajo del backend termine para leer sus outputs
+    runs-on: ubuntu-latest
+    
+    # Damos permisos explícitos para comentar en Pull Requests
+    permissions:
+      pull-requests: write
+
+    steps:
+      - name: Create Backend Coverage Comment
+        uses: peter-evans/create-or-update-comment@v4
+        with:
+          issue-number: ${{ github.event.pull_request.number }}
+          body: |
+            ## Backend Test Coverage Report
+            ```
+            ${{ needs.unit-tests-backend.outputs.coverage }}
+            ```
